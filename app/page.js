@@ -288,6 +288,7 @@ export default function FundingRateDashboard() {
               className="flex items-center justify-between p-5 cursor-pointer hover:bg-gray-850/60"
               onClick={() => setShowArbsSection(!showArbsSection)}
             >
+              
               <div className="flex items-center gap-3">
                 <Target className="w-6 h-6 text-emerald-400" />
                 <div>
