@@ -14,6 +14,7 @@ import {
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
+import SentimentAnalyzer from '../lib/sentiment';
 
 // Utils
 const toAPY = (hourlyRate) => {
@@ -126,7 +127,12 @@ export default function FundingRateDashboard({ initialRates = [], initialError =
   const [expandedArbs, setExpandedArbs] = useState({});
   const [showArbsSection, setShowArbsSection] = useState(true);
   const [showManualModal, setShowManualModal] = useState(false);
+  const [showSentimentModal, setShowSentimentModal] = useState(false);
   const rowsPerPage = 20;
+
+  // Sentiment state
+  const [sentimentAnalyzer] = useState(() => new SentimentAnalyzer());
+  const [sentiment, setSentiment] = useState({ sentiment: 'neutral', score: 0, confidence: 0 });
 
   const [manualInputs, setManualInputs] = useState({
     symbol: 'BTC',
@@ -207,6 +213,14 @@ export default function FundingRateDashboard({ initialRates = [], initialError =
       fetchRates();
     }
   }, [minOpenInterest, isInitialLoadComplete, fetchRates]);
+
+  // Analyze sentiment when rates change
+  useEffect(() => {
+    if (rates.length > 0) {
+      const sentimentData = sentimentAnalyzer.analyzeSentiment(rates);
+      setSentiment(sentimentData);
+    }
+  }, [rates, sentimentAnalyzer]);
 
   const handleSort = (key) => {
     let direction = 'desc';
@@ -299,14 +313,14 @@ export default function FundingRateDashboard({ initialRates = [], initialError =
                   <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl">
                     <Zap className="w-6 h-6 text-white" />
                   </div>
-                  <div>
+          <div>
                     <h1 className="text-2xl lg:text-3xl font-bold text-white">
                       Funding Rate Arbitrage
-                    </h1>
+            </h1>
                     <p className="text-gray-400 text-sm">
                       Real-time cross-exchange opportunities
-                    </p>
-                  </div>
+            </p>
+          </div>
                 </div>
                 <div className="flex items-center gap-4 text-sm text-gray-400">
                   <div className="flex items-center gap-2">
@@ -320,28 +334,35 @@ export default function FundingRateDashboard({ initialRates = [], initialError =
                 </div>
               </div>
               <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={() => setShowManualModal(true)}
+            <button
+              onClick={() => setShowSentimentModal(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 rounded-xl transition-all duration-200 shadow-lg hover:shadow-purple-500/25"
+            >
+              <span className="text-lg">{sentimentAnalyzer.getSentimentIcon(sentiment.sentiment)}</span>
+              <span className="font-medium hidden sm:inline">Sentiment</span>
+            </button>
+            <button
+              onClick={() => setShowManualModal(true)}
                   className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 rounded-xl transition-all duration-200 shadow-lg hover:shadow-emerald-500/25"
-                >
-                  <Plus className="w-4 h-4" />
+            >
+              <Plus className="w-4 h-4" />
                   <span className="font-medium">Manual Calc</span>
-                </button>
-                <button
-                  onClick={() => setShowSettings(!showSettings)}
+            </button>
+            <button
+              onClick={() => setShowSettings(!showSettings)}
                   className="flex items-center gap-2 px-4 py-2.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-gray-600 rounded-xl transition-all duration-200"
-                >
-                  <Settings className="w-4 h-4" />
+            >
+              <Settings className="w-4 h-4" />
                   <span className="font-medium">Settings</span>
-                </button>
-                <button
-                  onClick={fetchRates}
-                  disabled={loading}
+            </button>
+            <button
+              onClick={fetchRates}
+              disabled={loading}
                   className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-xl transition-all duration-200 shadow-lg hover:shadow-blue-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                   <span className="font-medium">Refresh</span>
-                </button>
+            </button>
               </div>
             </div>
           </div>
@@ -358,6 +379,7 @@ export default function FundingRateDashboard({ initialRates = [], initialError =
             </div>
           </div>
         )}
+
 
         {/* Key Statistics - Compact Mobile Layout */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
@@ -425,9 +447,9 @@ export default function FundingRateDashboard({ initialRates = [], initialError =
           <div className="bg-gray-950 border border-gray-900 rounded-xl p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                <Settings className="w-5 h-5" />
-                Alert Thresholds
-              </h3>
+              <Settings className="w-5 h-5" />
+              Alert Thresholds
+            </h3>
               <button
                 onClick={() => setShowSettings(false)}
                 className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
@@ -504,20 +526,20 @@ export default function FundingRateDashboard({ initialRates = [], initialError =
                     <div className="p-2 lg:p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg">
                       <Target className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
                     </div>
-                    <div>
+                <div>
                       <h2 className="text-lg lg:text-xl font-bold text-white flex items-center gap-2">
                         <span className="hidden sm:inline">Active Arbitrage Opportunities</span>
                         <span className="sm:hidden">Arbitrage</span>
                         <span className="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-medium rounded-full">
                           {allArbs.length}
                         </span>
-                      </h2>
+                  </h2>
                       <p className="text-xs lg:text-sm text-gray-400 mt-1">
                         <span className="hidden sm:inline">{allArbs.length === 1 ? 'Opportunity' : 'Opportunities'} above {spreadThreshold}% APY threshold</span>
                         <span className="sm:hidden">Above {spreadThreshold}% APY</span>
-                      </p>
-                    </div>
-                  </div>
+                  </p>
+                </div>
+              </div>
                   <div className="flex items-center gap-2 lg:gap-3">
                     <div className="text-right">
                       <p className="text-xl lg:text-2xl font-bold text-emerald-400">
@@ -642,13 +664,13 @@ export default function FundingRateDashboard({ initialRates = [], initialError =
           <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-purple-600/5 rounded-2xl"></div>
           <div className="relative">
             <Search className="absolute left-3 lg:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 lg:w-5 lg:h-5" />
-            <input
-              type="text"
+          <input
+            type="text"
               placeholder="Search exchanges or symbols (e.g. BTC, Hyperliquid)..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 lg:pl-12 pr-4 py-3 lg:py-4 bg-gray-950/80 border border-gray-800 rounded-2xl text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500/50 transition-all duration-200 text-base lg:text-lg"
-            />
+          />
           </div>
         </div>
 
@@ -939,6 +961,79 @@ export default function FundingRateDashboard({ initialRates = [], initialError =
               <div className="p-5 border-t border-gray-800 flex justify-end">
                 <button
                   onClick={() => setShowManualModal(false)}
+                  className="px-4 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Market Sentiment Modal */}
+        {showSentimentModal && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+            <div className="bg-gray-950 border border-gray-800 rounded-xl w-full max-w-lg">
+              <div className="p-5 border-b border-gray-800 flex justify-between items-center">
+                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                  <span className="text-lg">{sentimentAnalyzer.getSentimentIcon(sentiment.sentiment)}</span>
+                  Market Sentiment Analysis
+                </h3>
+                <button 
+                  onClick={() => setShowSentimentModal(false)}
+                  className="text-gray-400 hover:text-white"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="p-5 space-y-6">
+                {/* Main Sentiment Display */}
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-white mb-2">{sentiment.score}</div>
+                  <div className="text-sm text-gray-400 mb-4">Sentiment Score</div>
+                  <div className={`text-2xl font-bold ${sentimentAnalyzer.getSentimentColor(sentiment.sentiment)}`}>
+                    {sentimentAnalyzer.getSentimentDescription(sentiment.sentiment, sentiment.score)}
+                  </div>
+                  <div className="text-sm text-gray-500 mt-2">
+                    Confidence: {sentiment.confidence}%
+                  </div>
+                </div>
+
+                {/* Breakdown */}
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="text-center p-4 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+                    <div className="text-2xl font-bold text-emerald-400">{sentiment.bullishRatio}%</div>
+                    <div className="text-sm text-gray-400">Bullish Rates</div>
+                    <div className="text-xs text-gray-500 mt-1">Positive funding</div>
+                  </div>
+                  <div className="text-center p-4 bg-rose-500/10 rounded-lg border border-rose-500/20">
+                    <div className="text-2xl font-bold text-rose-400">{sentiment.bearishRatio}%</div>
+                    <div className="text-sm text-gray-400">Bearish Rates</div>
+                    <div className="text-xs text-gray-500 mt-1">Negative funding</div>
+                  </div>
+                  <div className="text-center p-4 bg-orange-500/10 rounded-lg border border-orange-500/20">
+                    <div className="text-2xl font-bold text-orange-400">{sentiment.extremeRatio}%</div>
+                    <div className="text-sm text-gray-400">Extreme Rates</div>
+                    <div className="text-xs text-gray-500 mt-1">&gt;1% funding</div>
+                  </div>
+                </div>
+
+                {/* How it works */}
+                <div className="bg-gray-900/50 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-gray-300 mb-2">How Sentiment is Calculated</h4>
+                  <ul className="text-xs text-gray-400 space-y-1">
+                    <li>• Analyzes all funding rates across exchanges</li>
+                    <li>• Weights by open interest (higher OI = more influence)</li>
+                    <li>• Bullish: rates &gt; 0.5% (longs pay shorts)</li>
+                    <li>• Bearish: rates &lt; -0.5% (shorts pay longs)</li>
+                    <li>• Extreme: rates &gt; 1% (high volatility)</li>
+                    <li>• Score: -100 (very bearish) to +100 (very bullish)</li>
+                  </ul>
+                </div>
+              </div>
+              <div className="p-5 border-t border-gray-800 flex justify-end">
+                <button
+                  onClick={() => setShowSentimentModal(false)}
                   className="px-4 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg"
                 >
                   Close
