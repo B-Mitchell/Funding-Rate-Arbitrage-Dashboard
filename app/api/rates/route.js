@@ -5,9 +5,13 @@ import { fetchBybitRates } from '@/lib/exchanges/bybit';
 import { fetchLighterRates } from '@/lib/exchanges/lighter';
 import { fetchEdgeXRates } from '@/lib/exchanges/edgex';
 
-export async function GET() {
+export async function GET(request) {
   try {
-    // Fetch from all exchanges in parallel
+    // Get query parameters
+    const { searchParams } = new URL(request.url);
+    const minOpenInterest = parseFloat(searchParams.get('minOpenInterest')) || 0;
+    
+    // Fetch from all exchanges in parallel with open interest filtering
     const [
       hyperliquidRates,
       lighterRates,
@@ -15,11 +19,11 @@ export async function GET() {
       bybitRates,
       edgexRates
     ] = await Promise.allSettled([
-      fetchHyperliquidRates(),
-      fetchLighterRates(),
+      fetchHyperliquidRates(minOpenInterest),
+      fetchLighterRates(minOpenInterest),
       fetchBinanceRates(),
       fetchBybitRates(),
-      fetchEdgeXRates(),
+      fetchEdgeXRates(minOpenInterest),
     ]);
 
     const allRates = [];
@@ -27,7 +31,7 @@ export async function GET() {
     // Only include successful results
     if (hyperliquidRates.status === 'fulfilled') allRates.push(...hyperliquidRates.value);
     // if (binanceRates.status === 'fulfilled') allRates.push(...binanceRates.value);
-    if (bybitRates.status === 'fulfilled') allRates.push(...bybitRates.value);
+    // if (bybitRates.status === 'fulfilled') allRates.push(...bybitRates.value);
     if (lighterRates.status === 'fulfilled') allRates.push(...lighterRates.value);
     if (edgexRates.status === 'fulfilled') allRates.push(...edgexRates.value);
 
