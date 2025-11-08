@@ -16,7 +16,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={`${poppins.className} bg-gray-100`}>
+      <body className={`${poppins.className} bg-black text-gray-100`}>
         <div className="min-h-screen flex flex-col">
           <main className="flex-grow">
             {children}

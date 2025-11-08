@@ -12,8 +12,10 @@ import {
   Plus,
   Target,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  BarChart3
 } from 'lucide-react';
+import Link from 'next/link';
 import SentimentAnalyzer from '../lib/sentiment';
 
 // Utils
@@ -122,7 +124,7 @@ export default function FundingRateDashboard({ initialRates = [], initialError =
   const [error, setError] = useState(initialError);
   const [showSettings, setShowSettings] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'desc' });
+  const [sortConfig, setSortConfig] = useState({ key: 'timestamp', direction: 'asc' });
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedArbs, setExpandedArbs] = useState({});
   const [showArbsSection, setShowArbsSection] = useState(true);
@@ -247,6 +249,16 @@ export default function FundingRateDashboard({ initialRates = [], initialError =
       result.sort((a, b) => {
         let aValue = a[sortConfig.key] || '';
         let bValue = b[sortConfig.key] || '';
+        
+        // Handle date/timestamp fields
+        if (sortConfig.key === 'timestamp' || sortConfig.key === 'fundingTime') {
+          const aDate = aValue ? new Date(aValue).getTime() : 0;
+          const bDate = bValue ? new Date(bValue).getTime() : 0;
+          return sortConfig.direction === 'asc' 
+            ? aDate - bDate 
+            : bDate - aDate;
+        }
+        
         if (typeof aValue === 'string') {
           aValue = aValue.toLowerCase();
           bValue = bValue.toLowerCase();
@@ -334,12 +346,19 @@ export default function FundingRateDashboard({ initialRates = [], initialError =
                 </div>
               </div>
               <div className="flex flex-wrap gap-3">
-            <button
-              onClick={() => setShowSentimentModal(true)}
+            <Link
+              href="/sentiment"
               className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 rounded-xl transition-all duration-200 shadow-lg hover:shadow-purple-500/25"
             >
+              <BarChart3 className="w-4 h-4" />
+              <span className="font-medium">Sentiment Dashboard</span>
+            </Link>
+            <button
+              onClick={() => setShowSentimentModal(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600/70 to-purple-700/70 hover:from-purple-700/80 hover:to-purple-800/80 rounded-xl transition-all duration-200 shadow-lg hover:shadow-purple-500/25"
+            >
               <span className="text-lg">{sentimentAnalyzer.getSentimentIcon(sentiment.sentiment)}</span>
-              <span className="font-medium hidden sm:inline">Sentiment</span>
+              <span className="font-medium hidden sm:inline">Quick Sentiment</span>
             </button>
             <button
               onClick={() => setShowManualModal(true)}
